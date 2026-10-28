@@ -1,9 +1,19 @@
-
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'services/api_service.dart';
 import 'views/dashboard_view.dart';
 
 void main() {
+  WidgetsFlutterBinding.ensureInitialized();
+  SystemChrome.setSystemUIOverlayStyle(
+    const SystemUiOverlayStyle(
+      statusBarColor: Color(0xFF07311C),
+      statusBarIconBrightness: Brightness.light,
+      statusBarBrightness: Brightness.dark,
+      systemNavigationBarColor: Color(0xFFF8F2EE),
+      systemNavigationBarIconBrightness: Brightness.dark,
+    ),
+  );
   runApp(const VitalleApp());
 }
 
@@ -17,8 +27,16 @@ class VitalleApp extends StatelessWidget {
       title: 'Vitalle',
       theme: ThemeData(
         scaffoldBackgroundColor: const Color(0xFFF8F2EE),
-        colorScheme: ColorScheme.fromSeed(
-          seedColor: const Color(0xFF52745C),
+        colorScheme: ColorScheme.fromSeed(seedColor: const Color(0xFF52745C)),
+        appBarTheme: const AppBarTheme(
+          backgroundColor: Color(0xFF07311C),
+          foregroundColor: Colors.white,
+          surfaceTintColor: Colors.transparent,
+          systemOverlayStyle: SystemUiOverlayStyle(
+            statusBarColor: Color(0xFF07311C),
+            statusBarIconBrightness: Brightness.light,
+            statusBarBrightness: Brightness.dark,
+          ),
         ),
         useMaterial3: true,
       ),
@@ -37,12 +55,12 @@ class TelaLogin extends StatefulWidget {
 class _TelaLoginState extends State<TelaLogin> {
   static const Color verdeEscuro = Color(0xFF07311C);
   static const Color verdeVitalle = Color(0xFF52745C);
+  static const Color fundoCard = Color(0xFFFDF9F9);
   static const Color verdeLimao = Color(0xFFBBF0B9);
-  static const Color fundo = Color(0xFFF8F2EE);
+  static const Color fundo = Color(0xFFFCF7F4);
 
   final TextEditingController emailController = TextEditingController();
   final TextEditingController senhaController = TextEditingController();
-
   bool ocultarSenha = true;
   bool carregando = false;
 
@@ -56,38 +74,25 @@ class _TelaLoginState extends State<TelaLogin> {
   Future<void> realizarLogin() async {
     final email = emailController.text.trim();
     final senha = senhaController.text;
-
     if (email.isEmpty || senha.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Preencha o e-mail e a senha.'),
-        ),
+        const SnackBar(content: Text('Preencha o e-mail e a senha.')),
       );
       return;
     }
-
-    setState(() {
-      carregando = true;
-    });
-
+    setState(() => carregando = true);
     try {
       final resposta = await ApiService.login(email, senha);
-
       if (!mounted) return;
-
       if (resposta['sucesso'] == true) {
         final token = resposta['token'] as String?;
-
-        if (token == null || token.isEmpty) {
+        if (token == null || token.isEmpty)
           throw Exception('O servidor não retornou um token válido.');
-        }
-
+        final usuario = Map<String, dynamic>.from(resposta['usuario'] as Map);
         Navigator.pushReplacement(
           context,
           MaterialPageRoute(
-            builder: (context) => DashboardView(
-              token: token,
-            ),
+            builder: (_) => DashboardView(token: token, usuario: usuario),
           ),
         );
       } else {
@@ -97,22 +102,30 @@ class _TelaLoginState extends State<TelaLogin> {
       }
     } catch (erro) {
       if (!mounted) return;
-
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(
-            erro.toString().replaceFirst('Exception: ', ''),
-          ),
+          content: Text(erro.toString().replaceFirst('Exception: ', '')),
           backgroundColor: Colors.red,
         ),
       );
     } finally {
-      if (mounted) {
-        setState(() {
-          carregando = false;
-        });
-      }
+      if (mounted) setState(() => carregando = false);
     }
+  }
+
+  InputDecoration decoracao(String dica, IconData icone, {Widget? suffixIcon}) {
+    return InputDecoration(
+      hintText: dica,
+      prefixIcon: Icon(icone, color: verdeVitalle),
+      suffixIcon: suffixIcon,
+      filled: true,
+      fillColor: Colors.white,
+      border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+      focusedBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(12),
+        borderSide: const BorderSide(color: verdeVitalle, width: 2),
+      ),
+    );
   }
 
   @override
@@ -128,14 +141,8 @@ class _TelaLoginState extends State<TelaLogin> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  const Icon(
-                    Icons.favorite,
-                    size: 70,
-                    color: verdeVitalle,
-                  ),
-
+                  const Icon(Icons.favorite, size: 70, color: verdeVitalle),
                   const SizedBox(height: 16),
-
                   const Text(
                     'Vitalle',
                     textAlign: TextAlign.center,
@@ -145,20 +152,13 @@ class _TelaLoginState extends State<TelaLogin> {
                       color: verdeEscuro,
                     ),
                   ),
-
                   const SizedBox(height: 8),
-
                   const Text(
                     'Cuidado que transforma',
                     textAlign: TextAlign.center,
-                    style: TextStyle(
-                      fontSize: 16,
-                      color: verdeVitalle,
-                    ),
+                    style: TextStyle(fontSize: 16, color: verdeVitalle),
                   ),
-
                   const SizedBox(height: 40),
-
                   const Text(
                     'Bem-vindo de volta!',
                     style: TextStyle(
@@ -167,19 +167,12 @@ class _TelaLoginState extends State<TelaLogin> {
                       color: verdeEscuro,
                     ),
                   ),
-
                   const SizedBox(height: 8),
-
                   const Text(
                     'Entre com seus dados para continuar.',
-                    style: TextStyle(
-                      fontSize: 15,
-                      color: verdeVitalle,
-                    ),
+                    style: TextStyle(fontSize: 15, color: verdeVitalle),
                   ),
-
                   const SizedBox(height: 28),
-
                   const Text(
                     'E-mail',
                     style: TextStyle(
@@ -187,35 +180,16 @@ class _TelaLoginState extends State<TelaLogin> {
                       color: verdeEscuro,
                     ),
                   ),
-
                   const SizedBox(height: 8),
-
                   TextField(
                     controller: emailController,
                     keyboardType: TextInputType.emailAddress,
-                    decoration: InputDecoration(
-                      hintText: 'Digite seu e-mail',
-                      prefixIcon: const Icon(
-                        Icons.email_outlined,
-                        color: verdeVitalle,
-                      ),
-                      filled: true,
-                      fillColor: Colors.white,
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      focusedBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
-                        borderSide: const BorderSide(
-                          color: verdeVitalle,
-                          width: 2,
-                        ),
-                      ),
+                    decoration: decoracao(
+                      'Digite seu e-mail',
+                      Icons.email_outlined,
                     ),
                   ),
-
                   const SizedBox(height: 20),
-
                   const Text(
                     'Senha',
                     style: TextStyle(
@@ -223,18 +197,13 @@ class _TelaLoginState extends State<TelaLogin> {
                       color: verdeEscuro,
                     ),
                   ),
-
                   const SizedBox(height: 8),
-
                   TextField(
                     controller: senhaController,
                     obscureText: ocultarSenha,
-                    decoration: InputDecoration(
-                      hintText: 'Digite sua senha',
-                      prefixIcon: const Icon(
-                        Icons.lock_outline,
-                        color: verdeVitalle,
-                      ),
+                    decoration: decoracao(
+                      'Digite sua senha',
+                      Icons.lock_outline,
                       suffixIcon: IconButton(
                         icon: Icon(
                           ocultarSenha
@@ -242,29 +211,12 @@ class _TelaLoginState extends State<TelaLogin> {
                               : Icons.visibility_off_outlined,
                           color: verdeVitalle,
                         ),
-                        onPressed: () {
-                          setState(() {
-                            ocultarSenha = !ocultarSenha;
-                          });
-                        },
-                      ),
-                      filled: true,
-                      fillColor: Colors.white,
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      focusedBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
-                        borderSide: const BorderSide(
-                          color: verdeVitalle,
-                          width: 2,
-                        ),
+                        onPressed: () =>
+                            setState(() => ocultarSenha = !ocultarSenha),
                       ),
                     ),
                   ),
-
                   const SizedBox(height: 28),
-
                   SizedBox(
                     height: 52,
                     child: ElevatedButton(

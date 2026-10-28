@@ -18,7 +18,7 @@ class _AvaliacoesViewState extends State<AvaliacoesView> {
   static const Color verdeEscuro = Color(0xFF07311C);
   static const Color verdeVitalle = Color(0xFF52745C);
   static const Color verdeLimao = Color(0xFFBBF0B9);
-  static const Color fundo = Color(0xFFF8F2EE);
+  static const Color fundo = Color(0xFFFCF7F4);
 
   final TextEditingController pesquisaController = TextEditingController();
 

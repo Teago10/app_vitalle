@@ -1,7 +1,82 @@
+import 'dart:async';
 import 'dart:convert';
+import 'dart:io';
 import 'package:http/http.dart' as http;
 
 class ApiService {
+
+
+static Future<Map<String, dynamic>> buscarCep(String cep) async {
+  final cepLimpo = cep.replaceAll(RegExp(r'\D'), '');
+
+  if (cepLimpo.length != 8) {
+    throw Exception('O CEP deve conter 8 números.');
+  }
+
+  try {
+    final resposta = await http
+        .get(
+          Uri.parse('https://viacep.com.br/ws/$cepLimpo/json/'),
+          headers: {'Accept': 'application/json'},
+        )
+        .timeout(const Duration(seconds: 10));
+
+    if (resposta.statusCode != 200) {
+      throw Exception('Não foi possível consultar o CEP.');
+    }
+
+    final dados = jsonDecode(resposta.body);
+
+    if (dados is! Map<String, dynamic>) {
+      throw Exception('Resposta inválida do serviço de CEP.');
+    }
+
+    if (dados['erro'] == true) {
+      throw Exception('CEP não encontrado.');
+    }
+
+    return dados;
+  } on TimeoutException {
+    throw Exception('A consulta demorou muito. Tente novamente.');
+  } on SocketException {
+    throw Exception('Sem conexão com a internet.');
+  } on FormatException {
+    throw Exception('Resposta inválida do serviço de CEP.');
+  }
+}
+
+
+  static Future<Map<String, dynamic>> buscarPacientes(
+  String token,
+) async {
+  final resposta = await http.get(
+    Uri.parse('$baseUrl/pacientes'),
+    headers: {
+      'Accept': 'application/json',
+      'Authorization': 'Bearer $token',
+    },
+  );
+
+  final dados = jsonDecode(resposta.body) as Map<String, dynamic>;
+
+  if (resposta.statusCode == 200) {
+    return dados;
+  }
+
+  if (resposta.statusCode == 401) {
+    throw Exception('Sua sessão expirou. Faça login novamente.');
+  }
+
+  if (resposta.statusCode == 403) {
+    throw Exception(
+      dados['mensagem'] ?? 'Você não tem permissão para visualizar pacientes.',
+    );
+  }
+
+  throw Exception(
+    dados['mensagem'] ?? 'Erro ao carregar pacientes.',
+  );
+}
   
 static Future<Map<String, dynamic>> buscarCuidadores(
   String token,
@@ -118,4 +193,131 @@ static Future<Map<String, dynamic>> buscarAvaliacoes(String token) async {
       );
     }
   }
+  
+static Future<Map<String, dynamic>> cadastrarPaciente(
+  String token,
+  Map<String, dynamic> dadosPaciente,
+) async {
+  try {
+    final resposta = await http.post(
+      Uri.parse('$baseUrl/pacientes'),
+      headers: {
+        'Accept': 'application/json',
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer $token',
+      },
+      body: jsonEncode(dadosPaciente),
+    );
+
+    final dados = jsonDecode(resposta.body) as Map<String, dynamic>;
+
+    if (resposta.statusCode == 201) {
+      return dados;
+    }
+
+    if (resposta.statusCode == 422) {
+      final erros = dados['errors'];
+
+      if (erros is Map && erros.isNotEmpty) {
+        final primeiroErro = erros.values.first;
+
+        if (primeiroErro is List && primeiroErro.isNotEmpty) {
+          throw Exception(primeiroErro.first.toString());
+        }
+      }
+
+      throw Exception(
+        dados['message'] ?? 'Verifique os dados informados.',
+      );
+    }
+
+    if (resposta.statusCode == 401) {
+      throw Exception('Sessão expirada. Faça login novamente.');
+    }
+
+    if (resposta.statusCode == 403) {
+      throw Exception(
+        dados['mensagem'] ?? 'Você não tem permissão para cadastrar pacientes.',
+      );
+    }
+
+    throw Exception(
+      dados['mensagem'] ??
+          dados['message'] ??
+          'Não foi possível cadastrar o paciente.',
+    );
+  } catch (e) {
+    if (e is FormatException) {
+      throw Exception('O servidor retornou uma resposta inválida.');
+    }
+
+    rethrow;
+  }
+}
+
+static Future<Map<String, dynamic>> editarPaciente(
+  String token,
+  int id,
+  Map<String, dynamic> dadosPaciente,
+) async {
+  final resposta = await http.put(
+    Uri.parse('$baseUrl/pacientes/$id'),
+    headers: {
+      'Accept': 'application/json',
+      'Content-Type': 'application/json',
+      'Authorization': 'Bearer $token',
+    },
+    body: jsonEncode(dadosPaciente),
+  );
+
+  final dados = jsonDecode(resposta.body) as Map<String, dynamic>;
+
+  if (resposta.statusCode == 200) {
+    return dados;
+  }
+
+  if (resposta.statusCode == 422) {
+    final erros = dados['errors'];
+
+    if (erros is Map && erros.isNotEmpty) {
+      final primeiroErro = erros.values.first;
+
+      if (primeiroErro is List && primeiroErro.isNotEmpty) {
+        throw Exception(primeiroErro.first.toString());
+      }
+    }
+  }
+
+  throw Exception(
+    dados['mensagem'] ??
+        dados['message'] ??
+        'Não foi possível atualizar o paciente.',
+  );
+}
+
+static Future<Map<String, dynamic>> excluirPaciente(
+  String token,
+  int id,
+) async {
+  final resposta = await http.delete(
+    Uri.parse('$baseUrl/pacientes/$id'),
+    headers: {
+      'Accept': 'application/json',
+      'Authorization': 'Bearer $token',
+    },
+  );
+
+  final dados = jsonDecode(resposta.body) as Map<String, dynamic>;
+
+  if (resposta.statusCode == 200) {
+    return dados;
+  }
+
+  throw Exception(
+    dados['mensagem'] ??
+        dados['message'] ??
+        'Não foi possível excluir o paciente.',
+  );
+}
+
 }
