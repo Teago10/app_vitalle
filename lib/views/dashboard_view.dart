@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'avaliacoes_view.dart';
 import 'pacientes_view.dart';
+import 'atendimentos_view.dart';
 
 class DashboardView extends StatelessWidget {
   final String token;
@@ -58,6 +59,13 @@ class DashboardView extends StatelessWidget {
       Navigator.push(
         context,
         MaterialPageRoute(builder: (_) => AvaliacoesView(token: token)),
+      );
+      return;
+    }
+    if (destino == 'Atendimentos') {
+      Navigator.push(
+        context,
+        MaterialPageRoute(builder: (_) => AtendimentosView(token: token)),
       );
       return;
     }
