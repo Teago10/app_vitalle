@@ -4,6 +4,43 @@ import 'dart:io';
 import 'package:http/http.dart' as http;
 
 class ApiService {
+  static Map<String, String> _cabecalhosPerfil(String token) => {
+    'Accept': 'application/json',
+    'Content-Type': 'application/json',
+    'Authorization': 'Bearer $token',
+  };
+
+  static Map<String, dynamic> _lerRespostaPerfil(http.Response resposta) {
+    final dados = jsonDecode(resposta.body) as Map<String, dynamic>;
+    if (resposta.statusCode >= 200 && resposta.statusCode < 300) return dados;
+    if (resposta.statusCode == 401) throw Exception('Sessão expirada. Entre novamente.');
+    final erros = dados['errors'];
+    if (erros is Map && erros.isNotEmpty) {
+      final primeiro = erros.values.first;
+      if (primeiro is List && primeiro.isNotEmpty) throw Exception(primeiro.first.toString());
+    }
+    throw Exception((dados['message'] ?? dados['mensagem'] ?? 'Não foi possível concluir a operação.').toString());
+  }
+
+  static Future<Map<String, dynamic>> buscarPerfil(String token) async {
+    final resposta = await http.get(Uri.parse('$baseUrl/perfil'), headers: _cabecalhosPerfil(token));
+    return _lerRespostaPerfil(resposta);
+  }
+
+  static Future<Map<String, dynamic>> atualizarPerfil(String token, String nome, String email) async {
+    final resposta = await http.patch(Uri.parse('$baseUrl/perfil'),
+      headers: _cabecalhosPerfil(token), body: jsonEncode({'name': nome, 'email': email}));
+    return _lerRespostaPerfil(resposta);
+  }
+
+  static Future<Map<String, dynamic>> atualizarSenha(String token, String atual, String nova, String confirmacao) async {
+    final resposta = await http.put(Uri.parse('$baseUrl/perfil/senha'),
+      headers: _cabecalhosPerfil(token), body: jsonEncode({
+        'current_password': atual, 'password': nova, 'password_confirmation': confirmacao,
+      }));
+    return _lerRespostaPerfil(resposta);
+  }
+
   static Future<Map<String, dynamic>> buscarCep(String cep) async {
     final cepLimpo = cep.replaceAll(RegExp(r'\D'), '');
 
@@ -383,5 +420,42 @@ class ApiService {
           dados['message'] ??
           'Não foi possível atualizar o atendimento.',
     );
+  }
+
+  static Future<void> enviarSolicitacaoSuporte(
+    String token, {
+    required String nome,
+    required String assunto,
+    required String mensagem,
+  }) async {
+    try {
+      final resposta = await http.post(
+        Uri.parse('$baseUrl/suporte'),
+        headers: {
+          'Accept': 'application/json',
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $token',
+        },
+        body: jsonEncode({
+          'nome': nome,
+          'assunto': assunto,
+          'mensagem': mensagem,
+        }),
+      ).timeout(const Duration(seconds: 15));
+      if (resposta.statusCode == 201) return;
+      if (resposta.statusCode == 401) {
+        throw Exception('Sua sessão expirou. Faça login novamente.');
+      }
+      final dados = jsonDecode(resposta.body);
+      throw Exception(dados is Map
+          ? (dados['mensagem'] ?? dados['message'] ?? 'Não foi possível enviar a solicitação.').toString()
+          : 'Não foi possível enviar a solicitação.');
+    } on TimeoutException {
+      throw Exception('A conexão demorou muito. Tente novamente.');
+    } on SocketException {
+      throw Exception('Sem conexão com o servidor.');
+    } on FormatException {
+      throw Exception('Resposta inválida do servidor.');
+    }
   }
 }

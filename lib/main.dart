@@ -63,9 +63,11 @@ class _TelaLoginState extends State<TelaLogin> {
   final TextEditingController senhaController = TextEditingController();
   bool ocultarSenha = true;
   bool carregando = false;
+  final FocusNode focoSenha = FocusNode();
 
   @override
   void dispose() {
+    focoSenha.dispose();
     emailController.dispose();
     senhaController.dispose();
     super.dispose();
@@ -80,6 +82,8 @@ class _TelaLoginState extends State<TelaLogin> {
       );
       return;
     }
+    FocusScope.of(context).unfocus();
+    if (carregando) return;
     setState(() => carregando = true);
     try {
       final resposta = await ApiService.login(email, senha);
@@ -116,13 +120,19 @@ class _TelaLoginState extends State<TelaLogin> {
   InputDecoration decoracao(String dica, IconData icone, {Widget? suffixIcon}) {
     return InputDecoration(
       hintText: dica,
+      hintStyle: const TextStyle(color: Color(0xFF8B9D90)),
       prefixIcon: Icon(icone, color: verdeVitalle),
       suffixIcon: suffixIcon,
       filled: true,
       fillColor: Colors.white,
-      border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+      contentPadding: const EdgeInsets.symmetric(vertical: 19, horizontal: 18),
+      enabledBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(16),
+        borderSide: const BorderSide(color: Color(0xFFDCE8DC)),
+      ),
+      border: OutlineInputBorder(borderRadius: BorderRadius.circular(16)),
       focusedBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(16),
         borderSide: const BorderSide(color: verdeVitalle, width: 2),
       ),
     );
@@ -135,118 +145,113 @@ class _TelaLoginState extends State<TelaLogin> {
       body: SafeArea(
         child: Center(
           child: SingleChildScrollView(
-            padding: const EdgeInsets.all(24),
+            padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 30),
             child: ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 420),
+              constraints: const BoxConstraints(maxWidth: 430),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  const Icon(Icons.favorite, size: 70, color: verdeVitalle),
-                  const SizedBox(height: 16),
-                  const Text(
-                    'Vitalle',
-                    textAlign: TextAlign.center,
-                    style: TextStyle(
-                      fontSize: 34,
-                      fontWeight: FontWeight.bold,
-                      color: verdeEscuro,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  const Text(
-                    'Cuidado que transforma',
-                    textAlign: TextAlign.center,
-                    style: TextStyle(fontSize: 16, color: verdeVitalle),
-                  ),
-                  const SizedBox(height: 40),
-                  const Text(
-                    'Bem-vindo de volta!',
-                    style: TextStyle(
-                      fontSize: 24,
-                      fontWeight: FontWeight.bold,
-                      color: verdeEscuro,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  const Text(
-                    'Entre com seus dados para continuar.',
-                    style: TextStyle(fontSize: 15, color: verdeVitalle),
-                  ),
-                  const SizedBox(height: 28),
-                  const Text(
-                    'E-mail',
-                    style: TextStyle(
-                      fontWeight: FontWeight.w600,
-                      color: verdeEscuro,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  TextField(
-                    controller: emailController,
-                    keyboardType: TextInputType.emailAddress,
-                    decoration: decoracao(
-                      'Digite seu e-mail',
-                      Icons.email_outlined,
-                    ),
-                  ),
-                  const SizedBox(height: 20),
-                  const Text(
-                    'Senha',
-                    style: TextStyle(
-                      fontWeight: FontWeight.w600,
-                      color: verdeEscuro,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  TextField(
-                    controller: senhaController,
-                    obscureText: ocultarSenha,
-                    decoration: decoracao(
-                      'Digite sua senha',
-                      Icons.lock_outline,
-                      suffixIcon: IconButton(
-                        icon: Icon(
-                          ocultarSenha
-                              ? Icons.visibility_outlined
-                              : Icons.visibility_off_outlined,
-                          color: verdeVitalle,
-                        ),
-                        onPressed: () =>
-                            setState(() => ocultarSenha = !ocultarSenha),
+                  Container(
+                    height: 105,
+                    width: 105,
+                    alignment: Alignment.center,
+                    child: Container(
+                      width: 90,
+                      height: 90,
+                      decoration: BoxDecoration(
+                        color: verdeEscuro,
+                        borderRadius: BorderRadius.circular(28),
+                        boxShadow: const [
+                          BoxShadow(color: Color(0x2607311C), blurRadius: 22, offset: Offset(0, 9)),
+                        ],
                       ),
+                      child: const Icon(Icons.volunteer_activism_rounded, size: 48, color: verdeLimao),
                     ),
                   ),
-                  const SizedBox(height: 28),
-                  SizedBox(
-                    height: 52,
-                    child: ElevatedButton(
-                      onPressed: carregando ? null : realizarLogin,
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: verdeEscuro,
-                        foregroundColor: verdeLimao,
-                        disabledBackgroundColor: verdeVitalle,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
+                  const SizedBox(height: 10),
+                  const Text('Vitalle', textAlign: TextAlign.center,
+                      style: TextStyle(fontSize: 39, fontWeight: FontWeight.w800,
+                          letterSpacing: -1.4, color: verdeEscuro)),
+                  const SizedBox(height: 3),
+                  const Text('Cuidado que transforma', textAlign: TextAlign.center,
+                      style: TextStyle(fontSize: 14, color: verdeVitalle)),
+                  const SizedBox(height: 34),
+                  Container(
+                    padding: const EdgeInsets.fromLTRB(24, 28, 24, 26),
+                    decoration: BoxDecoration(
+                      color: fundoCard,
+                      borderRadius: BorderRadius.circular(28),
+                      border: Border.all(color: const Color(0xFFE8EEE6)),
+                      boxShadow: const [
+                        BoxShadow(color: Color(0x1207311C), blurRadius: 28, offset: Offset(0, 12)),
+                      ],
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        const Text('Boas-vindas!', style: TextStyle(
+                            fontSize: 27, fontWeight: FontWeight.w800, color: verdeEscuro)),
+                        const SizedBox(height: 7),
+                        const Text('Entre na sua conta para continuar.',
+                            style: TextStyle(fontSize: 14, color: verdeVitalle)),
+                        const SizedBox(height: 27),
+                        const Text('E-mail', style: TextStyle(fontWeight: FontWeight.w700, color: verdeEscuro)),
+                        const SizedBox(height: 9),
+                        TextField(
+                          controller: emailController,
+                          keyboardType: TextInputType.emailAddress,
+                          textInputAction: TextInputAction.next,
+                          autofillHints: const [AutofillHints.email],
+                          onSubmitted: (_) => focoSenha.requestFocus(),
+                          decoration: decoracao('seuemail@exemplo.com', Icons.alternate_email_rounded),
                         ),
-                      ),
-                      child: carregando
-                          ? const SizedBox(
-                              height: 24,
-                              width: 24,
-                              child: CircularProgressIndicator(
-                                color: verdeLimao,
-                                strokeWidth: 2,
-                              ),
-                            )
-                          : const Text(
-                              'Entrar',
-                              style: TextStyle(
-                                fontSize: 17,
-                                fontWeight: FontWeight.bold,
-                              ),
+                        const SizedBox(height: 20),
+                        const Text('Senha', style: TextStyle(fontWeight: FontWeight.w700, color: verdeEscuro)),
+                        const SizedBox(height: 9),
+                        TextField(
+                          controller: senhaController,
+                          focusNode: focoSenha,
+                          obscureText: ocultarSenha,
+                          textInputAction: TextInputAction.done,
+                          autofillHints: const [AutofillHints.password],
+                          onSubmitted: (_) { if (!carregando) realizarLogin(); },
+                          decoration: decoracao('Digite sua senha', Icons.lock_outline_rounded,
+                            suffixIcon: IconButton(
+                              tooltip: ocultarSenha ? 'Mostrar senha' : 'Ocultar senha',
+                              icon: Icon(ocultarSenha ? Icons.visibility_outlined : Icons.visibility_off_outlined,
+                                  color: verdeVitalle),
+                              onPressed: () => setState(() => ocultarSenha = !ocultarSenha),
                             ),
+                          ),
+                        ),
+                        const SizedBox(height: 28),
+                        SizedBox(
+                          height: 56,
+                          child: ElevatedButton(
+                            onPressed: carregando ? null : realizarLogin,
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: verdeEscuro,
+                              foregroundColor: verdeLimao,
+                              disabledBackgroundColor: verdeVitalle,
+                              elevation: 0,
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                            ),
+                            child: carregando
+                                ? const SizedBox(height: 23, width: 23,
+                                    child: CircularProgressIndicator(color: verdeLimao, strokeWidth: 2))
+                                : const Row(mainAxisAlignment: MainAxisAlignment.center, children: [
+                                    Text('Entrar', style: TextStyle(fontSize: 17, fontWeight: FontWeight.bold)),
+                                    SizedBox(width: 10),
+                                    Icon(Icons.arrow_forward_rounded, size: 20),
+                                  ]),
+                          ),
+                        ),
+                      ],
                     ),
                   ),
+                  const SizedBox(height: 24),
+                  const Text('Seu cuidado começa aqui.', textAlign: TextAlign.center,
+                      style: TextStyle(color: verdeVitalle, fontSize: 13)),
                 ],
               ),
             ),
